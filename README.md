@@ -6,6 +6,12 @@
 
 开发环境：keil5
 
+芯片：stm32f103c8t6
+
+flash size : 64k
+
+SROM : 20k
+
 例程代码等实现功能后会上传
 
 不定期更新
@@ -21,12 +27,13 @@
     user1         0x0800 4000    0x5c00   32k
     user2         0x0800 9c00    0x5c00   32k
     
-### bootloader工程
+### <1> bootloader工程
 
 该工程下的boot.c文件分析
 
 跳转函数：Load_app
 
+```
     void Load_app(uint32_t appaddr)
     {
       if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
@@ -35,4 +42,4 @@
         JumpToApp();
       }
     }
-
+```
