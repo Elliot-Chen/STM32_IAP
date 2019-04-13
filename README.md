@@ -27,9 +27,10 @@ SROM : 20k
     user1         0x0800 4000    0x5c00   32k
     user2         0x0800 9c00    0x5c00   32k
     
-### <1> bootloader工程
+### （1） bootloader工程
 
-    该工程下包含的用户文件：
+该工程下包含的用户文件：
+
     boot.c
     bsp_usart1.c
     bsp_gpio.c
