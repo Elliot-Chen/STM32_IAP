@@ -10,7 +10,7 @@
 
 flash size : 64k
 
-SROM : 20k
+SRAM : 20k
 
 例程代码等实现功能后会上传
 
