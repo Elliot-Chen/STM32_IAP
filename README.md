@@ -5,5 +5,4 @@
 不会编辑GitHub...
 
 # 一、代码分区烧录
-______
 hello world
