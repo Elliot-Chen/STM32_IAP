@@ -33,13 +33,13 @@ SROM : 20k
 
 跳转函数：Load_app
 
-```
-    void Load_app(uint32_t appaddr)
-    {
-      if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
-        JumpToApp = (IapFun)*(vu32*)(app_addr+4);
-        MSR_MSP(*(vu32*)app_addr);
-        JumpToApp();
-      }
-    }
+```c
+ void Load_app(uint32_t appaddr)
+{
+  if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
+  JumpToApp = (IapFun)*(vu32*)(app_addr+4);
+  MSR_MSP(*(vu32*)app_addr);
+  JumpToApp();
+  }
+}
 ```
