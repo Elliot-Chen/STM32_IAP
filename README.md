@@ -29,7 +29,10 @@ SROM : 20k
     
 ### <1> bootloader工程
 
-该工程下的boot.c文件分析
+    该工程下包含的用户文件：
+    boot.c
+    bsp_usart1.c
+    bsp_gpio.c
 
 跳转函数：Load_app
 
@@ -37,9 +40,9 @@ SROM : 20k
  void Load_app(uint32_t appaddr)
 {
   if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
-  JumpToApp = (IapFun)*(vu32*)(app_addr+4);
-  MSR_MSP(*(vu32*)app_addr);
-  JumpToApp();
+    JumpToApp = (IapFun)*(vu32*)(app_addr+4);
+    MSR_MSP(*(vu32*)app_addr);
+    JumpToApp();
   }
 }
 ```
