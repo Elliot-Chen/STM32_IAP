@@ -46,8 +46,8 @@ SRAM : 20k
     bsp_usart1.c
     bsp_gpio.c
 
-boot.c文件关键内容如下 ▼
-
+boot.c文件关键内容 ▼
+---
 ```c
 typedef  void (*IapFun)(void);
 IapFun JumpToApp; 
@@ -82,8 +82,8 @@ void Load_addr(uint32_t newaddr)
 ```
 
 Load_addr函数分析：
----
 
+---
 	if(((*(vu32*)newaddr)&0x2FFE0000) == 0x20000000)
 
 newaddr是用户程序Flash首地址
@@ -93,6 +93,7 @@ newaddr是用户程序Flash首地址
 该判断语句实现了：判断用户代码的堆栈地址是否落在0x2000 0000 ~0x2001 FFFF区间
 
 若堆栈不合法，则执行else里面的内容
+
 ---
 	JumpToAddr = (IapFun)*(vu32*)(newaddr+4);
 
@@ -100,18 +101,20 @@ stm32复位后会先从（堆栈地址+4）中取出复位中断向量的地址�
 
 JumpToAddr取出的的正是复位中断向量地址
 
+---
 	MSR_MSP(*(vu32*)newaddr);
 	
 这里调用了函数__asm void MSR_MSP(uint32_t addr)，用于设置用户程序堆栈指针	
 
 由于涉及到C语言中的融合汇编的编程，以后有机会再补充说明
 
+---
 	JumpToAddr();
 	
 这是一个指针函数，用于执行复位中断
 
 主函数 ▼
-
+---
 ```c
 int main(void)
 {
