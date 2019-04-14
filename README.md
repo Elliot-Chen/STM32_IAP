@@ -14,17 +14,19 @@ SRAM : 20k
 
 使用3.5库开发
 
+使用st-link v2进行烧写
+
 例程代码等实现功能后会上传
 
 不定期更新
 
 ## 一、跳转测试
 
-要实现IAP功能，其中关键是实现程序之间的跳转
+要实现IAP功能，其中关键之一是实现程序之间的跳转
 
 芯片上电后检测是否需要更新，若不需要则从boot跳转到user程序，在user程序下如果检测到需要更新的标志位，则跳转到boot下进行更新。
 
-下面详细说明如何实现不同程序之间的跳转
+下面详细说明如何实现不同程序之间的跳转。
 
 ### （一） 代码分区烧录
 
@@ -32,22 +34,26 @@ SRAM : 20k
 
 配置不同工程的烧录地址(keil MDK)
 
-在工程配置界面Options for Targer 'xxx'的Target选项中填写起始地址和大小（每个工程的空间可自由设置）
+在工程配置界面Options for Targer 'xxx'的Target中填写起始地址和大小（每个工程的空间可自由设置）
 
             start          size     
     boot    0x0800 0000    0x4000   16k
     app     0x0800 4000    0x5C00   32k
     
-### （二） boot工程
+在工程配置界面Options for Targer 'xxx'的Debug中选择ST-Link Debugger，并且点击旁边的setting按钮
 
-该工程下包含的用户文件：
+在弹出的窗口中点击Flash Download，可以看到下面信息 ▼ 主要要选择Erase Sectors，选择第一个会擦除整个flash
+	
+	Erase Full Chip	Program
+	Erase Sectors	Verify
+	Do not Erase	Reset and Run
+    
+### （二） 跳转函数
 
-    boot.c
-    bsp_usart1.c
-    bsp_gpio.c
+创建用户文件boot.c，以库形式进行开发测试，便于移植
 
-boot.c文件关键内容 ▼
----
+该文件中存放了实现不同工程之间跳转的必要函数 ▼
+
 ```c
 typedef  void (*IapFun)(void);
 IapFun JumpToApp; 
@@ -99,22 +105,27 @@ newaddr是用户程序Flash首地址
 
 stm32复位后会先从（堆栈地址+4）中取出复位中断向量的地址，并且跳转到中断服务程序，中断服务程序执行完后再跳转到main函数。
 
-JumpToAddr取出的的正是复位中断向量地址
+JumpToAddr取出的正是复位中断向量地址
 
 ---
 	MSR_MSP(*(vu32*)newaddr);
 	
 这里调用了函数__asm void MSR_MSP(uint32_t addr)，用于设置用户程序堆栈指针	
 
-由于涉及到C语言中的融合汇编的编程，以后有机会再补充说明
+由于涉及到C语言中的融合汇编的编程，以后有机会补习后再补充说明
 
 ---
 	JumpToAddr();
 	
 这是一个指针函数，用于执行复位中断
 
-主函数 ▼
 ---
+
+### （三） 主函数
+---
+将boot.c分别放入boot和app工程中，调用Load_addr即可实现程序之间的跳转
+
+下面以boot工程的主函数为例说明
 ```c
 int main(void)
 {
@@ -135,15 +146,22 @@ int main(void)
             Printf("no updata signal");
             Printf("Loading app");
             delay_ms(500);
-            Load_app(app_addr);
+            Load_addr(app_addr);
          }
      }
 }
 ```
 
-在while循环体，关于app升级在后面会单独讲解，所以第一个if判断可以先忽略
+在while循环体中，关于app升级在后面会单独讲解，所以第一个if判断可以先忽略
 
-显然在boot主程序中初始化外设配置后，仅仅调用了一个Load_app函数，通过传递用户程序地址即可实现不同的工程之间跳转功能。
+显然在主程序中初始化外设配置后，仅仅调用了一个Load_app函数，通过传递用户程序地址（app_addr）即可实现boot跳转到app工程。
+
+在boot.h中有宏定义，该地址就是（一）中设定的起始地址
+
+	#define boot_addr	0x8000000
+	#define app_addr	0x8004000
+
+在app工程中以库形式加入boot.c和boot.h文件，调用Load_addr(boot_addr)函数也可以实现从app跳转到boot工程。
 
 
 
