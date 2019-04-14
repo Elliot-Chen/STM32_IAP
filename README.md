@@ -34,23 +34,59 @@ SRAM : 20k
 
 配置不同工程的烧录地址(keil MDK)
 
-在工程配置界面Options for Targer 'xxx'的Target中填写起始地址和大小（每个工程的空间可自由设置）
+在工程配置界面Options for Targer 'xxx'的Target中填写起始地址和大小（每个工程的分配空间可自由设置）
 
-            start          size     
+    IROM1   start          size     
     boot    0x0800 0000    0x4000   16k
     app     0x0800 4000    0x5C00   32k
     
 在工程配置界面Options for Targer 'xxx'的Debug中选择ST-Link Debugger，并且点击旁边的setting按钮
 
-在弹出的窗口中点击Flash Download，可以看到下面信息 ▼ 选择Erase Full Chip会擦除整个flash
+在弹出的窗口中点击Flash Download，可以看到下面信息 ▼ 
 
-在本次调试中boot程序和app程序是通过st-link分两次进行烧写，因此要选择Erase Sectors擦除用到的扇区
 
 	Erase Full Chip		Program
 	Erase Sectors		Verify
 	Do not Erase		Reset and Run
+	
+选择Erase Full Chip会擦除整个flash
+
+本次调试中boot程序和app程序是通过st-link分两次进行烧写，因此要选择Erase Sectors擦除用到的扇区	
     
-### （二） 跳转函数
+### （二）地址偏移
+
+在芯片上电启动时，会首先调用systemInit函数初始化时钟，同时还会进行中断向量表的设置
+
+在systemInit函数体结尾处可以看到
+
+```c
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM. */
+#else
+  SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal FLASH. */
+#endif 
+```
+VTOR寄存器存放的是中断向量表的起始地址，默认情况下VECT_TAB_SRAM是没用定义的，
+
+所以执行SCB->VTOR = FLASH_BASE | VECT_TAB_OFFSET;
+
+追踪变量可以得知
+
+	#define FLASH_BASE            ((uint32_t)0x08000000) /*!< FLASH base address in the alias region */
+	#define SRAM_BASE             ((uint32_t)0x20000000) /*!< SRAM base address in the alias region */
+	
+	#define VECT_TAB_OFFSET  0x0 /*!< Vector Table base offset field. 
+                                  This value must be a multiple of 0x200. */
+
+其中FLASH_BASE和SRAM_BASE都是固定值（可以在对应芯片的数据手册上的Memory mapping章节找到）
+
+而VECT_TAB_OFFSET是默认值0，该值表示中断向量表起始地址的偏移量
+
+对于boot工程，偏移量为0，不用修改
+
+对于app工程，偏移量为0x4000，上述代码则应修改为SCB->VTOR = FLASH_BASE | 0x4000; 当然也可以选择改变VECT_TAB_OFFSET的值
+
+### （三） 跳转函数
 
 创建用户文件boot.c，以库形式进行开发测试，便于移植
 
@@ -123,7 +159,8 @@ JumpToAddr取出的正是复位中断向量地址
 
 ---
 
-### （三） 主函数
+
+### （四） 主函数
 
 将boot.c分别放入boot和app工程中，调用Load_addr即可实现程序之间的跳转
 
