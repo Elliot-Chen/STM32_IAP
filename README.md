@@ -38,7 +38,7 @@ SRAM : 20k
     boot    0x0800 0000    0x4000   16k
     app     0x0800 4000    0x5c00   32k
     
-### （1） bootloader工程
+### （1） boot工程
 
 该工程下包含的用户文件：
 
@@ -46,10 +46,26 @@ SRAM : 20k
     bsp_usart1.c
     bsp_gpio.c
 
-跳转函数：Load_app
+boot.c文件关键内容如下
 
 ```c
- void Load_app(uint32_t appaddr)
+typedef  void (*IapFun)(void);
+IapFun JumpToApp; 
+
+__asm void MSR_MSP(uint32_t addr) 
+{
+    MSR MSP, r0
+	BX r14
+//  __ASM("msr msp, r0");
+//  __ASM("bx lr"); 
+}
+
+
+//函数：    Load_app
+//功能：    实现不同工程之间的跳转
+//参数：    appaddr    工程起始地址
+//返回：    无
+void Load_app(uint32_t appaddr)
 {
   if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
     JumpToApp = (IapFun)*(vu32*)(app_addr+4);
@@ -58,3 +74,45 @@ SRAM : 20k
   }
 }
 ```
+
+该函数通过地址来实现不同工程之间的跳转。
+
+主函数如下
+
+```c
+int main(void)
+{
+    USART1_Config();
+    NVIC_Configuration();	
+    LED_GPIO_Config();
+    Printf("Entering boot");
+	
+    Updata_app_flag = 0;
+	
+    while(1){
+        if(Updata_app_flag){
+            Printf("Updata app");
+            delay_ms(500);
+            Updata_app();
+         }
+         else{
+            Printf("no updata signal");
+            Printf("Loading app");
+            delay_ms(500);
+            Load_app(app_addr);
+         }
+     }
+}
+```
+
+在while循环体，关于app升级在后面会单独讲解，所以第一个if判断可以先忽略
+
+显然在boot主程序中初始化外设配置后，仅仅调用了一个Load_app函数。
+
+
+
+
+
+
+
+
