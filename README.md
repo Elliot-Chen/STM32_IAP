@@ -42,11 +42,13 @@ SRAM : 20k
     
 在工程配置界面Options for Targer 'xxx'的Debug中选择ST-Link Debugger，并且点击旁边的setting按钮
 
-在弹出的窗口中点击Flash Download，可以看到下面信息 ▼ 主要要选择Erase Sectors，选择第一个会擦除整个flash
-	
-	Erase Full Chip	Program
-	Erase Sectors	Verify
-	Do not Erase	Reset and Run
+在弹出的窗口中点击Flash Download，可以看到下面信息 ▼ 选择Erase Full Chip会擦除整个flash
+
+在本次调试中boot程序和app程序是通过st-link分两次进行烧写，因此要选择Erase Sectors擦除用到的扇区
+
+	Erase Full Chip		Program
+	Erase Sectors		Verify
+	Do not Erase		Reset and Run
     
 ### （二） 跳转函数
 
@@ -112,7 +114,7 @@ JumpToAddr取出的正是复位中断向量地址
 	
 这里调用了函数__asm void MSR_MSP(uint32_t addr)，用于设置用户程序堆栈指针	
 
-由于涉及到C语言中的融合汇编的编程，以后有机会补习后再补充说明
+由于涉及到C语言中的融合汇编的编程方式，以后有机会补习后再补充说明
 
 ---
 	JumpToAddr();
@@ -122,7 +124,7 @@ JumpToAddr取出的正是复位中断向量地址
 ---
 
 ### （三） 主函数
----
+
 将boot.c分别放入boot和app工程中，调用Load_addr即可实现程序之间的跳转
 
 下面以boot工程的主函数为例说明
@@ -154,7 +156,7 @@ int main(void)
 
 在while循环体中，关于app升级在后面会单独讲解，所以第一个if判断可以先忽略
 
-显然在主程序中初始化外设配置后，仅仅调用了一个Load_app函数，通过传递用户程序地址（app_addr）即可实现boot跳转到app工程。
+显然在主程序中初始化外设配置后，仅仅调用了一个Load_app(app_addr)函数，通过传递app程序地址即可实现boot跳转到app工程。
 
 在boot.h中有宏定义，该地址就是（一）中设定的起始地址
 
