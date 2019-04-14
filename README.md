@@ -12,20 +12,31 @@ flash size : 64k
 
 SRAM : 20k
 
+使用3.5库开发
+
 例程代码等实现功能后会上传
 
 不定期更新
 
-## 一、代码分区烧录
+## 一、跳转测试
 
-创建3个STM32工程：bootloader、user1、uesr2
+要实现IAP功能，其中关键是实现程序之间的跳转
 
-工程配置(keil MDK)
+芯片上电后检测是否需要更新，若不需要则从boot跳转到user程序，在user程序下如果检测到需要更新的标志位，则跳转到boot下进行更新。
 
-                  烧录地址        size     
-    bootloader    0x0800 0000    0x4000   16k
-    user1         0x0800 4000    0x5c00   32k
-    user2         0x0800 9c00    0x5c00   32k
+下面详细说明如何实现不同程序之间的跳转
+
+### （一）代码分区烧录
+
+创建2个STM32工程：bootloader、app
+
+配置不同工程的烧录地址(keil MDK)
+
+在工程配置界面Options for Targer 'xxx'的Target选项中填写起始地址和大小（每个工程的空间可自由设置）
+
+            start          size     
+    boot    0x0800 0000    0x4000   16k
+    app     0x0800 4000    0x5c00   32k
     
 ### （1） bootloader工程
 
