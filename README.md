@@ -66,16 +66,27 @@ __asm void MSR_MSP(uint32_t addr)
 //参数：    appaddr    工程起始地址
 //返回：    无
 void Load_app(uint32_t appaddr)
+void Load_app(uint32_t newaddr)
 {
-  if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000){
-    JumpToApp = (IapFun)*(vu32*)(app_addr+4);
-    MSR_MSP(*(vu32*)app_addr);
-    JumpToApp();
-  }
+	if(((*(vu32*)newaddr)&0x2FFE0000)==0x20000000){
+		JumpToApp = (IapFun)*(vu32*)(newaddr+4);
+		MSR_MSP(*(vu32*)newaddr);
+		JumpToApp();
+	}
+	else{
+		Printf("no app");
+		delay_ms(500);
+		Printf("return boot");
+		delay_ms(500);
+	}
 }
 ```
 
 该函数通过地址来实现不同工程之间的跳转。
+
+函数分析：
+
+	if(((*(vu32*)app_addr)&0x2FFE0000)==0x20000000)
 
 主函数如下
 
