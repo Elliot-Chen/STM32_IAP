@@ -38,7 +38,7 @@ SRAM : 20k
 
     IROM1   start          size     
     boot    0x0800 0000    0x4000   16k
-    app     0x0800 4000    0x5C00   32k
+    app     0x0800 4000    0x5C00   23k
     
 在工程配置界面Options for Targer 'xxx'的Debug中选择ST-Link Debugger，并且点击旁边的setting按钮
 
@@ -219,6 +219,33 @@ int main(void)
 			↑	←  清除标志位		主循环	← 产生标志位 ← 串口传输新固件
 							↓（检测标志位）
 			↑	←	←	←跳转到boot程序
+
+建立bsp_flash.c和bsp_flash.h文件
+### （一）ST官方flash库文件
+
+芯片在上电运行中一般是不允许进行flash写入操作的，但ST官方提供了针对flsah操作的API接口。
+
+在stm32f10x_flash.h文件中可以看到所提供的API
+
+其中需要关注的是
+
+```c
+void FLASH_Unlock(void);//flash解锁，在写flash前必须要先解锁
+void FLASH_Lock(void);	//flsah锁定，在写入flash后必须要上锁
+
+FLASH_Status FLASH_ErasePage(uint32_t Page_Address);//扇区擦除
+
+FLASH_Status FLASH_ProgramWord(uint32_t Address, uint32_t Data);	//写全字（32bit即4byte）
+FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);	//写半字（16bit即2byte）
+
+```
+flash写入流程：
+	
+	1、解锁
+	2、读出扇区内容（如果需要）
+	3、对整个扇区进行擦除，因为规定flash在写入前初始值必须为0xFF
+	4、调用API进行写操作
+	5、重新上锁
 
 
 
