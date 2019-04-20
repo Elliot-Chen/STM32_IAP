@@ -219,7 +219,7 @@ int main(void)
 							↓（检测标志位）
 			↑	←	←	←跳转到boot程序
 
-建立bsp_flash.c和bsp_flash.h文件
+
 ### （一）ST官方flash库文件
 
 芯片在上电运行中一般是不允许进行flash写入操作的，但ST官方提供了针对flsah操作的API接口。
@@ -240,7 +240,31 @@ FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);	//写半字
 ```
 由API的参数可以知道，对flash操作时，最小单位位2byte，即所谓的半字
 
-### （二）flash数据读出函数
+### （二）准备工作
+建立bsp_flash.c和bsp_flash.h文件，其中在头文件中定义必要的变量
+```c
+/*
+	一个扇区为1024byte(看具体芯片数据手册)
+	u8 arr[1024] size = 1k byte
+	u16 arr[512] size = 1k byte
+	u32 arr[256] size = 1k byte
+*/
+
+#define STM32_FLASH_SIZE	64			//芯片flash大小，单位Kbyte
+
+#if STM32_FLASH_SIZE < 256				//扇区大小，单位byte
+#define SECTOR_SIZE 1024
+#else
+#define SECTOR_SIZE 2048
+#endif
+
+extern uint16_t FLASH_BUF[SECTOR_SIZE/2];			//写入falsh专用BUFF，size = 扇区大小/2
+```
+测试使用的芯片型号是stm32f103c8t6，64k flash和20k sram
+
+FLASH_BUF数组由于flash操作过程中数据的临时存放位置
+
+### （三）flash数据读出函数
 
 相对于flash写入，flash读出简单得多
 
@@ -291,7 +315,7 @@ void FLASH_ReadmoreData(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NU
 ```
 第三个函数使用前需要先定义一个用于接收数据的数组，最终读出的数据存放在该数组中
 
-### （三）flash数据写入函数
+### （四）flash数据写入函数
 
 flash数据写入流程：
 	
@@ -302,6 +326,83 @@ flash数据写入流程：
 	5、重新上锁
 	
 根据以上的流程，可以定制专属的flash写入函数
+
+不过需要注意的是，flash写入前要求所写地址内的值为 0xFF ，否则不能写入，也就是说如果之前存在数据而且不是0xFF，必须要先调用FLASH_ErasePage()进行擦除，而该函数会擦除掉整个扇区，因此在这里选择直接读出扇区所有数据后再整块擦除，写入数据。
+
+---
+```c
+/**
+  * @brief  在指定扇区写入指定数量的数据
+  * @param  DATA_Address：	指定的扇区首地址
+  * @param  *pDATA：		指针，指向存储数据的数组
+  * @param  DATA_NUM:		传入数组的大小（数据个数，单个数据大小2byte）
+							值(0 ~ SECTOR_SIZE/2)
+  * @retval none
+  */
+void FLASH_WriteSector(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NUM)
+{
+	uint32_t dataIndex;
+	//检查地址是否合法
+	if(DATA_Address < FLASH_BASE || ((DATA_Address + DATA_NUM*2) >= (FLASH_BASE + 1024*STM32_FLASH_SIZE))){
+		return;
+	}
+	else{
+		//解锁flash
+		FLASH_Unlock();
+		//擦除扇区
+		FLASH_ErasePage(DATA_Address);
+		//写入数据
+		for(dataIndex = 0; dataIndex < DATA_NUM; dataIndex++){
+			FLASH_ProgramHalfWord(DATA_Address + dataIndex*2, pDATA[dataIndex]);
+		}
+		//锁定flash
+		FLASH_Lock();	
+	}
+}
+```
+▲ 这个函数实现了不保留的数据写入，最大的数据长度为扇区长度，值得注意的数DATA_NUM参数，由于单个数据大小为2byte，所以该值取值范围是0~511,共512个数据，最终的写入数据大小size = 512 * 2 byte = 1024 byte 即扇区size
+
+参数DATA_Address必须为扇区首地址
+
+---
+```c
+/**
+  * @brief  在指定地址写入2byte数据（半字），不破坏前后数据
+  * @param  DATA_Address：	指定的地址
+  * @param  *pDATA：		数组指针，用于临时存储数据的数组
+  * @param  DATA:			传入数组的大小（数组的个数）
+							值(0 ~ SECTOR_SIZE/2)
+  * @retval none
+  */
+void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
+{
+	uint32_t secaddr;		//扇区相对偏移量（相对基地址）
+	uint32_t secnum;		//扇区编号
+	uint32_t secoff;		//扇区内偏移量，由此可知该地址在该扇区内前面有多少个数据
+	uint32_t framware_addr;		//传入地址所在扇区的扇区物理绝对地址
+	uint32_t dataIndex = 0;
+	uint32_t i = 0;
+		
+	secaddr = DATA_Address - FLASH_BASE;			//计算扇区偏移量
+	secnum = secaddr / SECTOR_SIZE;				//扇区编号 = 相对地址 / 扇区大小
+	framware_addr = secnum * SECTOR_SIZE + FLASH_BASE;	//传入地址所在的扇区的首地址
+	secoff = secaddr % SECTOR_SIZE;				//扇区内偏移量，即插入数据在该扇区内的位置
+	
+	//读出整个扇区数据
+	FLASH_ReadmoreData(framware_addr, pDATA, SECTOR_SIZE/2);
+	//替换需要写入的数据
+	FLASH_BUF[secoff/2] = DATA;
+	//写入整个扇区数据
+	FLASH_WriteSector(framware_addr, pDATA, SECTOR_SIZE/2);
+}
+```
+▲ 这个函数结合了FLASH_ReadmoreData()和FLASH_WriteSector()两个函数，实现了在特定地址写入2byte数据，不损坏前后的数据
+
+---
+
+
+
+
 
 
 
