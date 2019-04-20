@@ -104,7 +104,6 @@ __asm void MSR_MSP(uint32_t addr)
 //  __ASM("bx lr"); 
 }
 
-
 //函数：    Load_addr
 //功能：    实现不同工程之间的跳转
 //参数：    newaddr    工程起始地址
@@ -239,13 +238,7 @@ FLASH_Status FLASH_ProgramWord(uint32_t Address, uint32_t Data);	//写全字（3
 FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);	//写半字（16bit即2byte）
 
 ```
-flash写入流程：
-	
-	1、解锁
-	2、读出扇区内容（如果需要）
-	3、对整个扇区进行擦除，因为规定flash在写入前初始值必须为0xFF
-	4、调用API进行写操作
-	5、重新上锁
+由API的参数可以知道，对flash操作时，最小单位位2byte，即所谓的半字
 
 ### （二）flash数据读出函数
 
@@ -262,7 +255,6 @@ uint16_t FLASH_ReadHalfWord(uint32_t address)
 {
 	return *(vu16*)address;
 }
-
 
 /**
   * @brief  在指定地址读出数据，读全字(4byte)
@@ -297,7 +289,24 @@ void FLASH_ReadmoreData(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NU
 	}
 }
 ```
-第三个函数使用前需要先定义一个用于接收数据的数组
+第三个函数使用前需要先定义一个用于接收数据的数组，最终读出的数据存放在该数组中
+
+### （三）flash数据写入函数
+
+flash数据写入流程：
+	
+	1、解锁
+	2、读出扇区内容（如果需要）
+	3、对整个扇区进行擦除，因为规定flash在写入前初始值必须为0xFF
+	4、调用API进行写操作
+	5、重新上锁
+	
+根据以上的流程，可以定制专属的flash写入函数
+
+
+
+
+
 
 
 
