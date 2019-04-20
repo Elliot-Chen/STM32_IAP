@@ -247,5 +247,60 @@ flash写入流程：
 	4、调用API进行写操作
 	5、重新上锁
 
+### （二）flash数据读出函数
+
+相对于flash写入，flash读出简单得多
+
+```c
+/**
+  * @brief  在指定地址读出数据，读半字(2byte)
+  * @param  address：	指定的地址
+  * @retval 		返回指定地址的数据
+			类型uint16_t
+  */
+uint16_t FLASH_ReadHalfWord(uint32_t address)
+{
+	return *(vu16*)address;
+}
+
+
+/**
+  * @brief  在指定地址读出数据，读全字(4byte)
+  * @param  address：	指定的地址
+  * @retval 		返回指定地址的数据
+			类型uint32_t
+  */
+uint32_t FLASH_ReadWord(uint32_t address)
+{
+	uint32_t temp1;	
+	
+	temp1 = *(vu16*)(address+2);
+	temp1 = temp1 << 16;
+	temp1 += *(vu16*)address;
+	
+	return temp1;
+}
+
+/**
+  * @brief  读出指定地址往后的指定个数的数据
+  * @param  DATA_Address：	指定的地址
+  * @param  *pDATA：		存放读出数据的数组
+  * @param  DATA_NUM:		读出的个数（半字）
+				值(0 ~ SECTOR_SIZE/2)
+  * @retval none
+  */
+void FLASH_ReadmoreData(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NUM)
+{
+	u32 i;
+	for(i = 0; i < DATA_NUM; i++){
+		pDATA[i] = FLASH_ReadHalfWord(DATA_Address + i*2);
+	}
+}
+```
+第三个函数使用前需要先定义一个用于接收数据的数组
+
+
+
+
 
 
