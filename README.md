@@ -336,7 +336,7 @@ flash数据写入流程：
   * @param  DATA_Address：	指定的扇区首地址
   * @param  *pDATA：		指针，指向存储数据的数组
   * @param  DATA_NUM:		传入数组的大小（数据个数，单个数据大小2byte）
-							值(0 ~ SECTOR_SIZE/2)
+				值(0 ~ SECTOR_SIZE/2)
   * @retval none
   */
 void FLASH_WriteSector(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NUM)
@@ -370,8 +370,8 @@ void FLASH_WriteSector(uint32_t DATA_Address, uint16_t *pDATA, uint32_t DATA_NUM
   * @brief  在指定地址写入2byte数据（半字），不破坏前后数据
   * @param  DATA_Address：	指定的地址
   * @param  *pDATA：		数组指针，用于临时存储数据的数组
-  * @param  DATA:			传入数组的大小（数组的个数）
-							值(0 ~ SECTOR_SIZE/2)
+  * @param  DATA:		传入数组的大小（数组的个数）
+				值(0 ~ SECTOR_SIZE/2)
   * @retval none
   */
 void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
@@ -399,6 +399,15 @@ void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
 ▲ 这个函数结合了FLASH_ReadmoreData()和FLASH_WriteSector()两个函数，实现了在特定地址写入2byte数据，不损坏前后的数据
 
 ---
+以上构建的两个flash写入函数
+
+其中FLASH_WriteSector()是接下来实现IAP功能所需要的函数，不保留写入
+
+而Flash_Write16Bit()是用于各类标识符的写入
+
+根据给出的flash写入流程，也可以构建更多功能的写入函数，这里不在累述
+
+
 
 
 
