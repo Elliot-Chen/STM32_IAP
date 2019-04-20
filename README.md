@@ -399,13 +399,13 @@ void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
 ▲ 这个函数结合了FLASH_ReadmoreData()和FLASH_WriteSector()两个函数，实现了在特定地址写入2byte数据，不损坏前后的数据
 
 ---
-以上构建的两个flash写入函数
+以上构建的两个flash写入函数，直接调用就可以往flash里写入数据了
 
 其中FLASH_WriteSector()是接下来实现IAP功能所需要的函数，不保留写入
 
 而Flash_Write16Bit()是用于各类标识符的写入
 
-根据给出的flash写入流程，也可以构建更多功能的写入函数，这里不在累述
+根据给出的flash写入流程，也可以构建更多功能的写入函数，这里不再累述
 
 
 
