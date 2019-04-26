@@ -412,9 +412,27 @@ void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
 通过上面两个测试，程序间的跳转和flash写入都已经单独实现了，对两部分进行结合即可实现IAP功能
 
 首先定义一些必要的变量和声明
+```c
+#define boot_addr		0x8000000		//boot地址
+#define APP1_addr		0x8004000		//APP1地址
+#define	APP2_addr		0x8009c00		//APP2地址
 
+#define Updata_flag		0x800f800		//更新标志位，0不需要更新，1执行更新程序
+#define newAPP_flag		0x800f802		//新APP标志位，选择使用哪个APP 0 ~ 255
+#define oldAPP_flag		0x800f804		//旧APP标志位，选择使用哪个APP 0 ~ 255
+#define SIZE_flag		0x800f806		//接收到的APP size检验位  类型u16
 
+extern uint32_t SIZE;				//接收到的APP固件大小，单位byte
 
+/*先改变数组内的值，再写入flash*/
+#define flag_num		20			//AT指令个数
+extern uint16_t flag_buf[flag_num];				//flag临时存储BUFF，用于存储AT指令
+```
+开头三个地址是对第一部分跳转测试中的拓展，boot地址不变，分配16Kflash,然后划分两个APP区间，每个分配23Kflash,每次只有一个APP处在运行状态，另一个处于空闲状态，下一次更新APP时写进空闲的APP，然后再该地址上运行新的APP，原先的APP则空闲出来，实现两个APP轮流使用，若更新失败，还能回滚。
+
+从0x800 f800--0x801 0000这2K是保留空间，用于存储各类flag标志位
+
+SIZE用于计算串口接收到的数据个数，再串口中断服务程序中实现，单个数据大小为1byte
 
 
 
