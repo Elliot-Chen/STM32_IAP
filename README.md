@@ -407,7 +407,11 @@ void Flash_Write16Bit(uint32_t DATA_Address, uint16_t *pDATA, uint16_t DATA)
 
 根据给出的flash写入流程，也可以构建更多功能的写入函数，这里不再累述
 
+## 三、	IAP实现
 
+通过上面两个测试，程序间的跳转和flash写入都已经单独实现了，对两部分进行结合即可实现IAP功能
+
+首先定义一些必要的变量和声明
 
 
 
